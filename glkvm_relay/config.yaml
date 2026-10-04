@@ -1,0 +1,37 @@
+name: GLKVM Relay
+version: "0.1.0"
+slug: glkvm_relay
+description: Self-hosted GLKVM Cloud relay (rttys) and its TURN server for GL.iNet KVMs
+url: https://github.com/heidrickla/ha-glkvm-relay
+arch:
+  - amd64
+startup: services
+boot: auto
+init: false
+host_network: true
+hassio_api: true
+map:
+  - type: ssl
+    read_only: true
+options:
+  admin_name: admin
+  password: ""
+  device_token: ""
+  access_ip: ""
+  web_port: 443
+  proxy_port: 10443
+  device_port: 5912
+  turn_port: 3478
+  certfile: fullchain.pem
+  keyfile: privkey.pem
+schema:
+  admin_name: match(^[A-Za-z0-9._-]{1,32}$)
+  password: password?
+  device_token: password?
+  access_ip: str?
+  web_port: port
+  proxy_port: port
+  device_port: port
+  turn_port: port
+  certfile: str
+  keyfile: str

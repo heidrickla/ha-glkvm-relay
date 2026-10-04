@@ -1,0 +1,8 @@
+build_from:
+  amd64: ghcr.io/home-assistant/amd64-base:3.24
+args:
+  GLKVM_COMMIT: be821d46f674bbba20267d2fe8160fcbe4ad97a6
+  SCHEMA_SHA256: 37aa75cff56ba7e03cdc89daf0824a4614c09388cac92ce66c1f04f6df16dcbd
+labels:
+  org.opencontainers.image.title: GLKVM Relay
+  org.opencontainers.image.licenses: MIT

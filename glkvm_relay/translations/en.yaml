@@ -1,0 +1,31 @@
+configuration:
+  admin_name:
+    name: Admin name
+    description: Name of the web console's administrator account.
+  password:
+    name: Admin password
+    description: Password for the web console. Left empty, one is generated on the first start and shown here.
+  device_token:
+    name: Device token
+    description: Token a KVM presents to join this relay. Left empty, one is generated on the first start and shown here.
+  access_ip:
+    name: Access address
+    description: Address browsers and KVMs use to reach the relay, also sent as the TURN server's address. Left empty, the host's address on its default route.
+  web_port:
+    name: Web console port
+    description: HTTPS port of the web console.
+  proxy_port:
+    name: HTTP proxy port
+    description: Port of the relay's websocket and HTTP proxy.
+  device_port:
+    name: Device port
+    description: Port KVMs connect to.
+  turn_port:
+    name: TURN port
+    description: STUN and TURN port, TCP and UDP. Relayed media uses UDP 49160 to 49260.
+  certfile:
+    name: Certificate file
+    description: Certificate in /ssl. When it or the key is missing, a self-signed certificate for the access address is used.
+  keyfile:
+    name: Key file
+    description: Private key in /ssl.
