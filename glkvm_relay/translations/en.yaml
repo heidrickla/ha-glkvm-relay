@@ -4,7 +4,7 @@ configuration:
     description: Name of the web console's administrator account.
   password:
     name: Admin password
-    description: Password for the web console. Left empty, one is generated on the first start and shown here.
+    description: Password for the web console; letters, digits and . _ ~ @ % + = - only. Left empty, one is generated on the first start and shown here.
   device_token:
     name: Device token
     description: Token a KVM presents to join this relay. Left empty, one is generated on the first start and shown here.

@@ -11,8 +11,14 @@ log() { echo "[glkvm-relay] $*"; }
 opt() { jq -r --arg k "$1" '.[$k] // empty' "$OPTS"; }
 # `cut` reads all of its input, so nothing in the pipe dies of SIGPIPE under pipefail.
 rand() { openssl rand -base64 96 | tr -dc 'A-Za-z0-9' | cut -c "1-$1"; }
-# Single-quoted YAML scalar: a quote inside is written twice.
-yq() { local s=$1; printf "'%s'" "${s//\'/\'\'}"; }
+# rttys parses its config with go-gypsy, which reads plain scalars; values are written unquoted, so
+# each is held to characters that need no quoting.
+safe() {
+  if ! [[ $2 =~ ^[A-Za-z0-9._~@%+=-]+$ ]]; then
+    log "$1 may only hold letters, digits and . _ ~ @ % + = -"
+    exit 1
+  fi
+}
 
 admin_name="$(opt admin_name)"
 web_port="$(opt web_port)"
@@ -78,14 +84,20 @@ cp /usr/share/glkvm/schema.sql "$DATA/database/schema.sql"
 rm -rf /home/database
 ln -s "$DATA/database" /home/database
 
-cat > "$DATA/rttys.conf" << EOF
-token: $(yq "$token")
-password: $(yq "$password")
-admin-name: $(yq "$admin_name")
-webrtc-ip: $(yq "$access_ip")
+safe password "$password"
+safe device_token "$token"
+safe access_ip "$access_ip"
+
+# rttys v2.8.0 takes its config file from RTTYS_CONF (or ./rttys.conf); it has no -c option.
+export RTTYS_CONF="$DATA/rttys.conf"
+cat > "$RTTYS_CONF" << EOF
+token: ${token}
+password: ${password}
+admin-name: ${admin_name}
+webrtc-ip: ${access_ip}
 webrtc-port: ${turn_port}
-webrtc-username: $(yq "$turn_user")
-webrtc-password: $(yq "$turn_pass")
+webrtc-username: ${turn_user}
+webrtc-password: ${turn_pass}
 addr-dev: :${device_port}
 addr-user: :${web_port}
 addr-http-proxy: :${proxy_port}
@@ -111,7 +123,7 @@ log "relay for ${access_ip}: web ${web_port}, http proxy ${proxy_port}, devices 
 turnserver -c "$DATA/turnserver.conf" &
 turn_pid=$!
 cd /home
-rttys -c "$DATA/rttys.conf" &
+rttys &
 rttys_pid=$!
 
 stop() { kill -TERM "$rttys_pid" "$turn_pid" 2> /dev/null || true; }
