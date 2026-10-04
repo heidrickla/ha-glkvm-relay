@@ -1,5 +1,7 @@
-#!/usr/bin/env bash
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
 # GLKVM Cloud relay (rttys) and its TURN server (coturn), configured from the add-on options.
+# with-contenv: s6-overlay keeps the container environment, SUPERVISOR_TOKEN included, out of CMD otherwise.
 set -euo pipefail
 
 OPTS=/data/options.json
