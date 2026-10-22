@@ -23,6 +23,9 @@ configuration:
   turn_port:
     name: TURN port
     description: STUN and TURN port, TCP and UDP. Relayed media uses UDP 49160 to 49260.
+  turn_allowed_peers:
+    name: TURN peers
+    description: Private addresses TURN may relay to, IPv4 addresses or ranges a.b.c.d-e.f.g.h; list the KVMs. Other private, link-local and loopback addresses, this host's included, are refused.
   certfile:
     name: Certificate file
     description: Certificate in /ssl. When it or the key is missing, a self-signed certificate for the access address is used.

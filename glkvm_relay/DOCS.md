@@ -20,6 +20,10 @@ Each port is an option; change one when it is taken on the host.
 
 The admin password and the device token are generated when left empty and written back to the options, where this page shows them. The TURN credentials are generated into `/data` and handed to browsers by the relay.
 
+## TURN peers
+
+TURN relays to public addresses and to the addresses in `turn_allowed_peers` (IPv4 addresses or ranges `a.b.c.d-e.f.g.h`). Every other address in 0.0.0.0/8, 10.0.0.0/8, 100.64.0.0/10, 127.0.0.0/8, 169.254.0.0/16, 172.16.0.0/12, 192.0.0.0/24, 192.168.0.0/16, 198.18.0.0/15, `::1`, `fc00::/7` and `fe80::/10` is refused, the access address included. List each KVM's address; a browser's address is needed only when a KVM relays to it.
+
 ## Certificate
 
 With `fullchain.pem` and `privkey.pem` in `/ssl` (or the files the options name), the web console uses them. Without them it uses a self-signed certificate for the access address, kept in `/data/tls` and remade when the access address changes.

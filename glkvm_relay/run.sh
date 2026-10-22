@@ -88,6 +88,19 @@ safe password "$password"
 safe device_token "$token"
 safe access_ip "$access_ip"
 
+# TURN relays to the addresses in turn_allowed_peers (the KVMs) and to public addresses; every other
+# private, shared, link-local and loopback address is refused, this host and the add-on network
+# included. An allowed address wins over a denied range.
+peer_lines=""
+while IFS= read -r peer; do
+  [ -n "$peer" ] || continue
+  if ! [[ $peer =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}(-[0-9]{1,3}(\.[0-9]{1,3}){3})?$ ]]; then
+    log "turn_allowed_peers entries are IPv4 addresses or ranges a.b.c.d-e.f.g.h"
+    exit 1
+  fi
+  peer_lines+="allowed-peer-ip=${peer}"$'\n'
+done < <(jq -r '(.turn_allowed_peers // [])[]' "$OPTS")
+
 # rttys v2.8.0 takes its config file from RTTYS_CONF (or ./rttys.conf); it has no -c option.
 export RTTYS_CONF="$DATA/rttys.conf"
 cat > "$RTTYS_CONF" << EOF
@@ -111,7 +124,19 @@ lt-cred-mech
 user=${turn_user}:${turn_pass}
 realm=glkvm
 no-multicast-peers
-no-cli
+denied-peer-ip=0.0.0.0-0.255.255.255
+denied-peer-ip=10.0.0.0-10.255.255.255
+denied-peer-ip=100.64.0.0-100.127.255.255
+denied-peer-ip=127.0.0.0-127.255.255.255
+denied-peer-ip=169.254.0.0-169.254.255.255
+denied-peer-ip=172.16.0.0-172.31.255.255
+denied-peer-ip=192.0.0.0-192.0.0.255
+denied-peer-ip=192.168.0.0-192.168.255.255
+denied-peer-ip=198.18.0.0-198.19.255.255
+denied-peer-ip=::1
+denied-peer-ip=fc00::-fdff:ffff:ffff:ffff:ffff:ffff:ffff:ffff
+denied-peer-ip=fe80::-febf:ffff:ffff:ffff:ffff:ffff:ffff:ffff
+${peer_lines}no-cli
 external-ip=${access_ip}
 min-port=49160
 max-port=49260
