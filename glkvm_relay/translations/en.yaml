@@ -26,6 +26,9 @@ configuration:
   turn_allowed_peers:
     name: TURN peers
     description: Private addresses TURN may relay to, IPv4 addresses or ranges a.b.c.d-e.f.g.h; list the KVMs. Other private, link-local and loopback addresses, this host's included, are refused.
+  turn_secret_generation:
+    name: TURN secret generation
+    description: Raise this number and restart to replace the TURN credential with a new one. A KVM keeps a copy from when it was added, so run the add-device script on it again afterwards.
   certfile:
     name: Certificate file
     description: Certificate in /ssl. When it or the key is missing, a self-signed certificate for the access address is used.

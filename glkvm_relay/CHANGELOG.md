@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.1
+
+- `rttys` runs at log level warn, so its start-up print of its parsed config no longer reaches the log.
+- The option `turn_secret_generation` replaces the TURN credential when raised and the add-on restarts; the log gives the hash prefix of the one in use.
+
 ## 0.2.0
 
 - TURN relays to public addresses and the addresses in `turn_allowed_peers`; other private, shared, link-local and loopback addresses, the host's own included, are refused.

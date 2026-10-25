@@ -40,11 +40,24 @@ if [ -z "$password" ] || [ -z "$token" ]; then
   log "generated the empty admin password or device token and saved them to the add-on options"
 fi
 
-# TURN credentials are handed to browsers by rttys, so nobody types them: generated once, kept in /data.
+# Nobody types the TURN credentials, so they live in /data, not in the options. turn_secret_generation
+# names the secret wanted: when it differs from the number kept beside the secret, a new one is made,
+# so a restart never replaces it twice. A secret from before the option existed is generation 1.
 umask 077
-[ -s "$DATA/turn.secret" ] || rand 32 > "$DATA/turn.secret"
+turn_generation="$(opt turn_secret_generation)"
+turn_generation="${turn_generation:-1}"
+kept_generation=1
+[ ! -s "$DATA/turn.generation" ] || kept_generation="$(cat "$DATA/turn.generation")"
+if [ ! -s "$DATA/turn.secret" ] || [ "$kept_generation" != "$turn_generation" ]; then
+  rand 32 > "$DATA/turn.secret.new"
+  mv "$DATA/turn.secret.new" "$DATA/turn.secret"
+  echo "$turn_generation" > "$DATA/turn.generation"
+  log "made a new TURN credential for generation ${turn_generation}"
+fi
 turn_user=glkvm
 turn_pass="$(cat "$DATA/turn.secret")"
+# Eight hex characters of its hash say which secret is in use without revealing it.
+log "TURN credential generation ${turn_generation}, fingerprint $(printf '%s' "$turn_pass" | sha256sum | cut -c1-8)"
 
 access_ip="$(opt access_ip)"
 if [ -z "$access_ip" ]; then
@@ -101,9 +114,12 @@ while IFS= read -r peer; do
   peer_lines+="allowed-peer-ip=${peer}"$'\n'
 done < <(jq -r '(.turn_allowed_peers // [])[]' "$OPTS")
 
-# rttys v2.8.0 takes its config file from RTTYS_CONF (or ./rttys.conf); it has no -c option.
+# rttys v2.8.0 takes its config file from RTTYS_CONF (or ./rttys.conf); it has no -c option. At its
+# default info level it logs its parsed config, passwords and token included; log-level warn keeps
+# that and every other info line out of the log.
 export RTTYS_CONF="$DATA/rttys.conf"
 cat > "$RTTYS_CONF" << EOF
+log-level: warn
 token: ${token}
 password: ${password}
 admin-name: ${admin_name}

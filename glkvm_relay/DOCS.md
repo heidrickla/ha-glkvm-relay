@@ -18,11 +18,19 @@ Each port is an option; change one when it is taken on the host.
 
 ## First start
 
-The admin password and the device token are generated when left empty and written back to the options, where this page shows them. The TURN credentials are generated into `/data` and handed to browsers by the relay.
+The admin password and the device token are generated when left empty and written back to the options, where this page shows them. The TURN credentials are generated into `/data`, are never shown here, and are handed to browsers by the relay.
 
 ## TURN peers
 
 TURN relays to public addresses and to the addresses in `turn_allowed_peers` (IPv4 addresses or ranges `a.b.c.d-e.f.g.h`). Every other address in 0.0.0.0/8, 10.0.0.0/8, 100.64.0.0/10, 127.0.0.0/8, 169.254.0.0/16, 172.16.0.0/12, 192.0.0.0/24, 192.168.0.0/16, 198.18.0.0/15, `::1`, `fc00::/7` and `fe80::/10` is refused, the access address included. List each KVM's address; a browser's address is needed only when a KVM relays to it.
+
+## Replacing the TURN credential
+
+Raise `turn_secret_generation` and restart. The start-up log says `made a new TURN credential` and gives the first eight hex characters of the credential's SHA-256 hash, so a change can be seen without the credential. A KVM keeps the credential it was added with in its own `S01selfCloud` script: after a new generation, run the add-device script (see below) on each KVM again so its copy matches.
+
+## Log
+
+The relay runs at log level warn, so its part of the log holds warnings and errors only; the add-on's own lines carry the `[glkvm-relay]` tag, and coturn logs as it does by default. The relay's start-up print of its parsed config is an info line and does not appear.
 
 ## Certificate
 
