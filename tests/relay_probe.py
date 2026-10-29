@@ -1,4 +1,5 @@
 """Probe the GLKVM relay add-on from the LAN: HTTPS console, device port, and a STUN binding request."""
+
 import os
 import socket
 import ssl
@@ -6,7 +7,9 @@ import struct
 import sys
 import urllib.request
 
-host = sys.argv[1] if len(sys.argv) > 1 else "203.0.113.10"
+if len(sys.argv) != 2:
+    sys.exit("usage: relay_probe.py <relay host>")
+host = sys.argv[1]
 
 ctx = ssl.create_default_context()
 ctx.check_hostname = False
@@ -34,13 +37,13 @@ mtype, mlen, cookie = struct.unpack("!HHI", data[:8])
 ok = mtype == 0x0101 and data[8:20] == tid
 attrs, i = {}, 20
 while i + 4 <= 20 + mlen:
-    t, n = struct.unpack("!HH", data[i:i + 4])
-    attrs[t] = data[i + 4:i + 4 + n]
+    t, n = struct.unpack("!HH", data[i : i + 4])
+    attrs[t] = data[i + 4 : i + 4 + n]
     i += 4 + n + (-n % 4)
 xma = attrs.get(0x0020)
 if xma:
     port = struct.unpack("!H", xma[2:4])[0] ^ 0x2112
-    ip = socket.inet_ntoa(bytes(a ^ b for a, b in zip(xma[4:8], struct.pack("!I", 0x2112A442))))
+    ip = socket.inet_ntoa(bytes(a ^ b for a, b in zip(xma[4:8], struct.pack("!I", 0x2112A442), strict=True)))
     print(f"stun udp 3478: binding success={ok}, mapped {ip}:{port}")
 else:
     print(f"stun udp 3478: type 0x{mtype:04x}, success={ok}, no mapped address")

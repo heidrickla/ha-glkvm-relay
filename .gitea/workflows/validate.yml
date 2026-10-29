@@ -1,0 +1,73 @@
+name: Lint, test and build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  lint:
+    name: Lint and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        timeout-minutes: 15
+      - uses: actions/setup-python@v5
+        timeout-minutes: 15
+        with:
+          python-version: "3.14"
+
+      # Pinned and pip-installed into a venv of this job's own: the runner's
+      # Python toolcache is shared with other repos and carries their packages.
+      - name: Install
+        timeout-minutes: 15
+        run: >-
+          python -m venv "$RUNNER_TEMP/venv" &&
+          "$RUNNER_TEMP/venv/bin/python" -m pip install --quiet "ruff==0.15.21" "yamllint==1.35.1"
+          "shellcheck-py==0.10.0.1"
+
+      - name: ruff
+        timeout-minutes: 15
+        run: |
+          "$RUNNER_TEMP/venv/bin/python" -m ruff check .
+          "$RUNNER_TEMP/venv/bin/python" -m ruff format --check .
+
+      - name: yamllint
+        timeout-minutes: 15
+        run: >-
+          "$RUNNER_TEMP/venv/bin/yamllint" -d "{extends: relaxed, rules: {line-length: {max: 160}, comments: {min-spaces-from-content: 1}}}"
+          repository.yaml glkvm_relay/config.yaml glkvm_relay/build.yaml glkvm_relay/translations/en.yaml
+          .gitea/workflows/validate.yml .github/workflows/ci.yml
+
+      - name: shellcheck
+        timeout-minutes: 15
+        run: >-
+          "$RUNNER_TEMP/venv/bin/shellcheck" glkvm_relay/run.sh tests/turn_rotation_test.sh tests/run_image.sh
+
+      - name: TURN credential rotation
+        timeout-minutes: 15
+        run: bash tests/turn_rotation_test.sh
+
+      - name: App linter
+        timeout-minutes: 15
+        uses: frenck/action-addon-linter@b9cfd1bc62ba60d2c4fc96317b5f7ada5923f4a7 # v2.21.1
+        with:
+          path: ./glkvm_relay
+
+  # The job reaches the forge host's Docker daemon: the image and the test
+  # container carry the run's id and are removed when the job ends.
+  build:
+    name: Build and run amd64
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        timeout-minutes: 15
+      - name: Build and run
+        timeout-minutes: 30
+        run: |
+          tag="glkvm-relay-ci:${{ github.run_id }}"
+          trap 'docker rmi -f "$tag" > /dev/null 2>&1 || true' EXIT
+          docker build --pull --build-arg BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.24 \
+            --build-arg BUILD_ARCH=amd64 -t "$tag" glkvm_relay
+          bash tests/run_image.sh "$tag"

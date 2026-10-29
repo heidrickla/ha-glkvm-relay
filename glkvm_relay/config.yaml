@@ -1,12 +1,11 @@
 name: GLKVM Relay
-version: "0.2.1"
+version: "0.3.0"
 slug: glkvm_relay
 description: Self-hosted GLKVM Cloud relay (rttys) and its TURN server for GL.iNet KVMs
 url: https://github.com/heidrickla/ha-glkvm-relay
 arch:
   - amd64
 startup: services
-boot: auto
 init: false
 host_network: true
 hassio_api: true

@@ -46,4 +46,4 @@ The relay's SQLite database is `/data/database/glkvm-cloud.db` and is included i
 
 ## Licence
 
-The add-on's own files are MIT. GLKVM Cloud is GL.iNet's work under the Business Source License 1.1, which permits non-production use, including personal use; the add-on downloads its binary from GL.iNet's published image at build time and includes none of its code.
+The add-on's own files are MIT. GLKVM Cloud is GL.iNet's work under the Business Source License 1.1, which permits non-production use, including personal use; the add-on downloads its binary from GL.iNet's published image at build time and includes none of its code. GL.iNet and GLKVM are GL.iNet's names; this app is not affiliated with GL.iNet.

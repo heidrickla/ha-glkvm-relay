@@ -1,3 +1,7 @@
+__pycache__/
+.ruff_cache/
+.venv/
+# Agent instruction files are not part of the project.
 AGENTS.md
 CLAUDE.md
 CONTRIBUTING.md

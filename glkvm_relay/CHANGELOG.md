@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.0
+
+- The app runs under its own AppArmor profile.
+- The store shows an icon, a logo and a short description, and the app's link opens its GitHub repository.
+
 ## 0.2.1
 
 - `rttys` runs at log level warn, so its start-up print of its parsed config no longer reaches the log.

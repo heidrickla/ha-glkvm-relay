@@ -1,0 +1,15 @@
+[project]
+name = "ha-glkvm-relay"
+version = "0.3.0"
+description = "Home Assistant app: GL.iNet's GLKVM Cloud relay and its TURN server"
+requires-python = ">=3.12"
+license = "MIT"
+
+# Only the LAN probe is Python; it runs on the developer's machine.
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B", "UP", "RUF", "SIM", "PL"]
+ignore = ["PLR2004"]
