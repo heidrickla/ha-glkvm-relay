@@ -6,6 +6,12 @@ A Home Assistant app that runs GL.iNet's self-hosted GLKVM Cloud relay (`rttys`)
 |---|---|
 | [GLKVM Relay](glkvm_relay/) | GLKVM Cloud relay and its TURN server on the host network, with generated credentials, TURN peers learned from the KVMs, and a TURN credential you replace by raising one option. |
 
+## Screenshots
+
+![The GLKVM web console's device list with one registered KVM](docs/images/devices.png)
+
+The web console the app serves, listing a registered KVM.
+
 ## Installing
 
 [![Open your Home Assistant instance and add this repository.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fheidrickla%2Fha-glkvm-relay)
