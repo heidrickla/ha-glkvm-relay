@@ -1,11 +1,8 @@
-ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.24
-
 # rttys from GL.iNet's published image, pinned by digest (v2.8.0, upstream commit be821d4).
 FROM glzhitong/glkvm-cloud:v2.8.0@sha256:6cf8dc8cd3d071324c1523037133949c8a966e640b2c36dad4326a48f1e65333 AS glkvm
 
-# Tag is in the ARG default and build.yaml; the Supervisor overrides BUILD_FROM per architecture.
-# hadolint ignore=DL3006
-FROM ${BUILD_FROM}
+# Home Assistant's multi-architecture base image, pinned to its Alpine release.
+FROM ghcr.io/home-assistant/base:3.24
 
 # The checksum check below pipes into sha256sum; failures must propagate.
 SHELL ["/bin/ash", "-o", "pipefail", "-c"]
@@ -16,7 +13,7 @@ ARG SCHEMA_SHA256=37aa75cff56ba7e03cdc89daf0824a4614c09388cac92ce66c1f04f6df16dc
 
 # rttys reads its schema from the database directory; upstream mounts it from its compose folder.
 # hadolint ignore=DL3018
-RUN apk add --no-cache bash coturn curl iproute2 jq openssl \
+RUN apk add --no-cache bash coturn curl iproute2 jq openssl sqlite \
  && mkdir -p /usr/share/glkvm \
  && curl -fsSL -o /usr/share/glkvm/schema.sql \
       "https://raw.githubusercontent.com/gl-inet/glkvm-cloud/${GLKVM_COMMIT}/docker-compose/database/schema.sql" \
@@ -29,20 +26,19 @@ RUN chmod +x /run.sh /usr/bin/rttys
 CMD ["/run.sh"]
 
 ARG BUILD_DATE
-ARG BUILD_DESCRIPTION
-ARG BUILD_NAME
 ARG BUILD_REF
-ARG BUILD_REPOSITORY
 ARG BUILD_VERSION
 LABEL \
-    io.hass.name="${BUILD_NAME}" \
-    io.hass.description="${BUILD_DESCRIPTION}" \
+    io.hass.name="GLKVM Relay" \
+    io.hass.description="Self-hosted GLKVM Cloud relay (rttys) and its TURN server for GL.iNet KVMs" \
+    io.hass.url="https://github.com/heidrickla/ha-glkvm-relay" \
     io.hass.arch="${BUILD_ARCH}" \
-    io.hass.type="addon" \
+    io.hass.type="app" \
     io.hass.version="${BUILD_VERSION}" \
     maintainer="Lewis Heidrick" \
-    org.opencontainers.image.title="${BUILD_NAME}" \
-    org.opencontainers.image.description="${BUILD_DESCRIPTION}" \
+    org.opencontainers.image.title="GLKVM Relay" \
+    org.opencontainers.image.description="Self-hosted GLKVM Cloud relay (rttys) and its TURN server for GL.iNet KVMs" \
+    org.opencontainers.image.source="https://github.com/heidrickla/ha-glkvm-relay" \
     org.opencontainers.image.vendor="Lewis Heidrick" \
     org.opencontainers.image.authors="Lewis Heidrick" \
     org.opencontainers.image.licenses="MIT" \

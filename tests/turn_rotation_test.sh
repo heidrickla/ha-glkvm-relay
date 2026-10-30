@@ -11,7 +11,7 @@ trap 'rm -rf "$DATA"' EXIT
 # shellcheck disable=SC2317  # called by the evaluated block
 log() { echo "[glkvm-relay] $*"; }
 # shellcheck disable=SC2317
-opt() { jq -r --arg k "$1" '.[$k] // empty' "$OPTS"; }
+opt() { jq -r --arg k "$1" --arg d "${2-}" 'if (.[$k] == null) or (.[$k] == "") then $d else (.[$k] | tostring) end' "$OPTS"; }
 # shellcheck disable=SC2317
 rand() { openssl rand -base64 96 | tr -dc 'A-Za-z0-9' | cut -c "1-$1"; }
 

@@ -1,6 +1,6 @@
 [project]
 name = "ha-glkvm-relay"
-version = "0.3.0"
+version = "0.4.0"
 description = "Home Assistant app: GL.iNet's GLKVM Cloud relay and its TURN server"
 requires-python = ">=3.12"
 license = "MIT"

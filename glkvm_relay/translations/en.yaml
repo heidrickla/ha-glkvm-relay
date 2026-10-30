@@ -1,7 +1,7 @@
 configuration:
   admin_name:
     name: Admin name
-    description: Name of the web console's administrator account.
+    description: Name of the web console's administrator account. Default admin.
   password:
     name: Admin password
     description: Password for the web console; letters, digits and . _ ~ @ % + = - only. Left empty, one is generated on the first start and shown here.
@@ -13,25 +13,28 @@ configuration:
     description: Address browsers and KVMs use to reach the relay, also sent as the TURN server's address. Left empty, the host's address on its default route.
   web_port:
     name: Web console port
-    description: HTTPS port of the web console.
+    description: HTTPS port of the web console. Default 443; the Open Web UI button assumes 443.
   proxy_port:
     name: HTTP proxy port
-    description: Port of the relay's websocket and HTTP proxy.
+    description: Port of the relay's websocket and HTTP proxy. Default 10443.
   device_port:
     name: Device port
-    description: Port KVMs connect to.
+    description: Port KVMs connect to. Default 5912.
   turn_port:
     name: TURN port
-    description: STUN and TURN port, TCP and UDP. Relayed media uses UDP 49160 to 49260.
+    description: STUN and TURN port, TCP and UDP. Default 3478. Relayed media uses UDP 49160 to 49260.
+  turn_learn_peers:
+    name: Learn TURN peers from the KVMs
+    description: On by default. TURN may relay to the address each KVM registered from. Off, it relays only to public addresses and the TURN peers below.
   turn_allowed_peers:
     name: TURN peers
-    description: Private addresses TURN may relay to, IPv4 addresses or ranges a.b.c.d-e.f.g.h; list the KVMs. Other private, link-local and loopback addresses, this host's included, are refused.
+    description: More private IPv4 addresses or ranges a.b.c.d-e.f.g.h TURN may relay to. Other private addresses, this host's included, are refused.
   turn_secret_generation:
     name: TURN secret generation
-    description: Raise this number and restart to replace the TURN credential with a new one. A KVM keeps a copy from when it was added, so run the add-device script on it again afterwards.
+    description: Default 1. Raise it and restart to replace the TURN credential; then run the add-device script on each KVM again so its copy matches.
   certfile:
     name: Certificate file
-    description: Certificate in /ssl. When it or the key is missing, a self-signed certificate for the access address is used.
+    description: Certificate in /ssl, default fullchain.pem. When it or the key is missing, a self-signed certificate for the access address is used.
   keyfile:
     name: Key file
-    description: Private key in /ssl.
+    description: Private key in /ssl, default privkey.pem.

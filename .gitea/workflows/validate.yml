@@ -37,13 +37,13 @@ jobs:
         timeout-minutes: 15
         run: >-
           "$RUNNER_TEMP/venv/bin/yamllint" -d "{extends: relaxed, rules: {line-length: {max: 160}, comments: {min-spaces-from-content: 1}}}"
-          repository.yaml glkvm_relay/config.yaml glkvm_relay/build.yaml glkvm_relay/translations/en.yaml
+          repository.yaml glkvm_relay/config.yaml glkvm_relay/translations/en.yaml
           .gitea/workflows/validate.yml .github/workflows/ci.yml
 
       - name: shellcheck
         timeout-minutes: 15
         run: >-
-          "$RUNNER_TEMP/venv/bin/shellcheck" glkvm_relay/run.sh tests/turn_rotation_test.sh tests/run_image.sh
+          "$RUNNER_TEMP/venv/bin/shellcheck" glkvm_relay/run.sh tests/turn_rotation_test.sh tests/turn_peers_test.sh tests/run_image.sh
 
       - name: TURN credential rotation
         timeout-minutes: 15
@@ -59,7 +59,7 @@ jobs:
         timeout-minutes: 15
       - name: App linter
         timeout-minutes: 15
-        uses: frenck/action-addon-linter@b9cfd1bc62ba60d2c4fc96317b5f7ada5923f4a7 # v2.21.1
+        uses: frenck/action-app-linter@b9cfd1bc62ba60d2c4fc96317b5f7ada5923f4a7 # v2.21.1
         with:
           path: ./glkvm_relay
 
@@ -76,6 +76,5 @@ jobs:
         run: |
           tag="glkvm-relay-ci:${{ github.run_id }}"
           trap 'docker rmi -f "$tag" > /dev/null 2>&1 || true' EXIT
-          docker build --pull --build-arg BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.24 \
-            --build-arg BUILD_ARCH=amd64 -t "$tag" glkvm_relay
+          docker build --pull --build-arg BUILD_ARCH=amd64 -t "$tag" glkvm_relay
           bash tests/run_image.sh "$tag"

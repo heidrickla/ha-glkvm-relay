@@ -8,7 +8,8 @@ OPTS=/data/options.json
 DATA=/data
 
 log() { echo "[glkvm-relay] $*"; }
-opt() { jq -r --arg k "$1" '.[$k] // empty' "$OPTS"; }
+# An option's value, or the default given when it is unset or empty; false stays false.
+opt() { jq -r --arg k "$1" --arg d "${2-}" 'if (.[$k] == null) or (.[$k] == "") then $d else (.[$k] | tostring) end' "$OPTS"; }
 # `cut` reads all of its input, so nothing in the pipe dies of SIGPIPE under pipefail.
 rand() { openssl rand -base64 96 | tr -dc 'A-Za-z0-9' | cut -c "1-$1"; }
 # rttys parses its config with go-gypsy, which reads plain scalars; values are written unquoted, so
@@ -20,11 +21,12 @@ safe() {
   fi
 }
 
-admin_name="$(opt admin_name)"
-web_port="$(opt web_port)"
-proxy_port="$(opt proxy_port)"
-device_port="$(opt device_port)"
-turn_port="$(opt turn_port)"
+admin_name="$(opt admin_name admin)"
+web_port="$(opt web_port 443)"
+proxy_port="$(opt proxy_port 10443)"
+device_port="$(opt device_port 5912)"
+turn_port="$(opt turn_port 3478)"
+learn_peers="$(opt turn_learn_peers true)"
 
 # The admin password and the device token are needed by people (to sign in, to onboard a KVM), so
 # they live in the options, where the add-on page shows them. Empty ones are generated once and
@@ -34,10 +36,13 @@ token="$(opt device_token)"
 if [ -z "$password" ] || [ -z "$token" ]; then
   [ -n "$password" ] || password="$(rand 24)"
   [ -n "$token" ] || token="$(rand 32)"
-  jq --arg p "$password" --arg t "$token" '{options: (. + {password: $p, device_token: $t})}' "$OPTS" |
-    curl -fsS -X POST -H "Authorization: Bearer ${SUPERVISOR_TOKEN}" -H "Content-Type: application/json" \
-      --data-binary @- http://supervisor/addons/self/options > /dev/null
-  log "generated the empty admin password or device token and saved them to the add-on options"
+  if ! jq --arg p "$password" --arg t "$token" '{options: (. + {password: $p, device_token: $t})}' "$OPTS" |
+    curl -fsS -X POST -H "Authorization: Bearer ${SUPERVISOR_TOKEN:-}" -H "Content-Type: application/json" \
+      --data-binary @- http://supervisor/addons/self/options > /dev/null; then
+    log "could not save a generated password and device token through the Supervisor; type both in the Configuration tab and restart"
+    exit 1
+  fi
+  log "generated the empty admin password or device token; both are on the app's Configuration tab"
 fi
 
 # Nobody types the TURN credentials, so they live in /data, not in the options. turn_secret_generation
@@ -70,8 +75,8 @@ if [ -z "$access_ip" ]; then
 fi
 
 # rttys reads its certificate from fixed paths. HA's /ssl pair when present, else a self-signed one.
-certfile="/ssl/$(opt certfile)"
-keyfile="/ssl/$(opt keyfile)"
+certfile="/ssl/$(opt certfile fullchain.pem)"
+keyfile="/ssl/$(opt keyfile privkey.pem)"
 if [ -f "$certfile" ] && [ -f "$keyfile" ]; then
   cert=$certfile
   key=$keyfile
@@ -114,6 +119,61 @@ while IFS= read -r peer; do
   peer_lines+="allowed-peer-ip=${peer}"$'\n'
 done < <(jq -r '(.turn_allowed_peers // [])[]' "$OPTS")
 
+# TURN peers learned from the KVMs. rttys stores a KVM's source address in devices.ip only after it
+# has accepted the device token. Those addresses go into coturn's allowed_peer_ip table, which coturn
+# rereads every five seconds, so a KVM added later is reachable without a restart.
+RTTYS_DB="$DATA/database/glkvm-cloud.db"
+TURN_DB=/tmp/turndb
+# This host's own addresses are never learned: TURN must not relay to the host.
+host_addrs=" $(ip -o addr show 2> /dev/null | awk '{split($4, a, "/"); printf "%s ", a[1]}')${access_ip} "
+peers_last="-"
+
+is_ipv4() {
+  local o='(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])'
+  [[ $1 =~ ^$o\.$o\.$o\.$o$ ]]
+}
+
+# Addresses of the registered KVMs that are not disabled, sorted, one per line.
+learned_peers() {
+  local ip
+  [ -s "$RTTYS_DB" ] || return 0
+  { sqlite3 -readonly -batch -noheader -cmd '.timeout 3000' "$RTTYS_DB" \
+    "SELECT DISTINCT ip FROM devices WHERE status <> 'disabled';" 2> /dev/null || true; } |
+    while IFS= read -r ip; do
+      is_ipv4 "$ip" || continue
+      [[ $host_addrs == *" $ip "* ]] && continue
+      echo "$ip"
+    done | sort -u
+}
+
+# Replaces coturn's learned peers with the space-separated addresses given, in one transaction.
+write_peers() {
+  local ip sql="BEGIN IMMEDIATE; CREATE TABLE IF NOT EXISTS allowed_peer_ip (realm varchar(127) default '',"
+  sql+=" ip_range varchar(256), primary key (realm,ip_range)); DELETE FROM allowed_peer_ip;"
+  for ip in $1; do
+    is_ipv4 "$ip" && sql+=" INSERT INTO allowed_peer_ip (realm, ip_range) VALUES ('', '${ip}');"
+  done
+  sqlite3 -batch -cmd '.timeout 3000' "$TURN_DB" "${sql} COMMIT;" > /dev/null
+}
+
+# Copies the learned peers to coturn when they have changed since the last copy, and logs the change.
+sync_peers_once() {
+  local peers
+  peers="$(learned_peers | tr '\n' ' ')"
+  peers="${peers% }"
+  [ "$peers" != "$peers_last" ] || return 0
+  if write_peers "$peers"; then
+    log "TURN peers learned from registered KVMs: ${peers:-none yet}"
+    peers_last=$peers
+  else
+    log "could not write the learned TURN peers to ${TURN_DB}; trying again"
+  fi
+}
+# End of the learned TURN peers.
+
+rm -f "$TURN_DB" "${TURN_DB}-journal"
+write_peers ""
+
 # rttys v2.8.0 takes its config file from RTTYS_CONF (or ./rttys.conf); it has no -c option. At its
 # default info level it logs its parsed config, passwords and token included; log-level warn keeps
 # that and every other info line out of the log.
@@ -134,6 +194,7 @@ ldap-enabled: false
 oidc-enabled: false
 EOF
 
+# coturn 4.10 keeps its admin CLI off by default; its old no-cli line only logs an error.
 cat > "$DATA/turnserver.conf" << EOF
 listening-port=${turn_port}
 lt-cred-mech
@@ -152,7 +213,7 @@ denied-peer-ip=198.18.0.0-198.19.255.255
 denied-peer-ip=::1
 denied-peer-ip=fc00::-fdff:ffff:ffff:ffff:ffff:ffff:ffff:ffff
 denied-peer-ip=fe80::-febf:ffff:ffff:ffff:ffff:ffff:ffff:ffff
-${peer_lines}no-cli
+${peer_lines}userdb=${TURN_DB}
 external-ip=${access_ip}
 min-port=49160
 max-port=49260
@@ -167,7 +228,19 @@ cd /home
 rttys &
 rttys_pid=$!
 
-stop() { kill -TERM "$rttys_pid" "$turn_pid" 2> /dev/null || true; }
+sync_pid=""
+if [ "$learn_peers" = true ]; then
+  while :; do
+    sync_peers_once
+    sleep 10
+  done &
+  sync_pid=$!
+else
+  log "learning TURN peers from the KVMs is off; TURN relays only to turn_allowed_peers and public addresses"
+fi
+log "web console https://${access_ip}:${web_port}, user ${admin_name}; the password is on the app's Configuration tab"
+
+stop() { kill -TERM "$rttys_pid" "$turn_pid" ${sync_pid:+"$sync_pid"} 2> /dev/null || true; }
 trap stop TERM INT
 
 # Either process ending ends the add-on, so the Supervisor's watchdog restarts both together.

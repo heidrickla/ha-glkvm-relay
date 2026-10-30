@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.0
+
+- TURN learns each KVM's address when the KVM registers with the relay, and may relay to it within about fifteen seconds, with no restart; a KVM disabled in the web console is dropped. `turn_learn_peers` turns this off; `turn_allowed_peers` still adds addresses.
+- Only the admin password and the device token are shown on the Configuration tab; every other option is optional with a default.
+- The app page has an Open Web UI button, and the log names the console's address and where the password is.
+- The image is built from `ghcr.io/home-assistant/base:3.24` named in the Dockerfile; `build.yaml` is gone.
+- coturn's start-up no longer logs an error for the retired `no-cli` setting.
+
 ## 0.3.0
 
 - The app runs under its own AppArmor profile.
