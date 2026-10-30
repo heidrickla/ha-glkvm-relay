@@ -18,7 +18,7 @@ The web console the app serves, listing a registered KVM.
 
 [![Open your Home Assistant instance and show the GLKVM Relay app.](https://my.home-assistant.io/badges/supervisor_addon.svg)](https://my.home-assistant.io/redirect/supervisor_addon/?addon=2ee9e8b9_glkvm_relay&repository_url=https%3A%2F%2Fgithub.com%2Fheidrickla%2Fha-glkvm-relay)
 
-The first button adds this repository to the App Store; the second opens the app's page. Without My Home Assistant: Settings > Apps > App Store > the three-dot menu > Repositories, add `https://github.com/heidrickla/ha-glkvm-relay`, then install GLKVM Relay. The app is built for amd64.
+The first button adds this repository to the App Store; the second opens the app's page. Without My Home Assistant: Settings > Apps > App Store > the three-dot menu > Repositories, add `https://github.com/heidrickla/ha-glkvm-relay`, then install GLKVM Relay. The app runs on amd64 and aarch64.
 
 ## Setup
 
@@ -50,7 +50,8 @@ python -m pip install ruff yamllint shellcheck-py
 ruff check . && ruff format --check .
 shellcheck glkvm_relay/run.sh tests/turn_rotation_test.sh tests/turn_peers_test.sh tests/run_image.sh
 bash tests/turn_rotation_test.sh
-docker build -t glkvm-relay:dev glkvm_relay
+docker buildx build --load --platform linux/amd64 --build-arg BUILD_ARCH=amd64 -t glkvm-relay:dev glkvm_relay
+docker buildx build --load --platform linux/arm64 --build-arg BUILD_ARCH=aarch64 -t glkvm-relay:dev-aarch64 glkvm_relay
 bash tests/run_image.sh glkvm-relay:dev
 python tests/relay_probe.py <relay host>
 ```
@@ -59,4 +60,4 @@ python tests/relay_probe.py <relay host>
 
 ## Licence
 
-MIT for this repository's files; see `LICENSE`. GLKVM Cloud is GL.iNet's work under the Business Source License 1.1, which permits non-production use, including personal use, and becomes GPLv3 on 2030-01-01. The image copies GL.iNet's `rttys` binary from their published image when it is built, and this repository includes none of their code. GL.iNet and GLKVM are GL.iNet's names; this project is not affiliated with GL.iNet.
+MIT for this repository's files; see `LICENSE`. GLKVM Cloud is GL.iNet's work under the Business Source License 1.1, which permits non-production use, including personal use, and becomes GPLv3 on 2030-01-01. The image builds `rttys` from GL.iNet's published source at a pinned commit when it is built, and this repository includes none of their code. GL.iNet and GLKVM are GL.iNet's names; this project is not affiliated with GL.iNet.

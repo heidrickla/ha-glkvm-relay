@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.0
+
+- The app installs on aarch64 (Raspberry Pi 4 and 5, Home Assistant Green and Yellow) as well as amd64.
+- `rttys` and its web console are built from GL.iNet's `glkvm-cloud` source at the v2.8.0 commit when the image is built, in place of the binary copied from GL.iNet's amd64-only image.
+
 ## 0.4.0
 
 - TURN learns each KVM's address when the KVM registers with the relay, and may relay to it within about fifteen seconds, with no restart; a KVM disabled in the web console is dropped. `turn_learn_peers` turns this off; `turn_allowed_peers` still adds addresses.

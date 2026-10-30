@@ -46,17 +46,34 @@ jobs:
         with:
           path: ./glkvm_relay
 
+  # aarch64 builds on GitHub's Arm runner, so the image is made as on a Raspberry Pi or Home Assistant
+  # Green, with the build stages on the target platform itself.
   build:
-    name: Build and run amd64
+    name: Build and run ${{ matrix.arch }}
     if: github.server_url == 'https://github.com'
-    runs-on: ubuntu-26.04
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            platform: linux/amd64
+            os: ubuntu-26.04
+          - arch: aarch64
+            platform: linux/arm64
+            os: ubuntu-24.04-arm
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
       - name: Build
         run: >-
-          docker build --pull --build-arg BUILD_ARCH=amd64 -t glkvm-relay:ci glkvm_relay
+          docker buildx build --load --pull --platform ${{ matrix.platform }}
+          --build-arg BUILD_ARCH=${{ matrix.arch }} --build-arg BUILD_VERSION=ci
+          -t glkvm-relay:ci glkvm_relay
       # The image starts as on a fresh install, answers the LAN probe, logs no credential, runs the
       # learned TURN peer test, and relays to a private peer only once a KVM registered from it.
       - name: Run
-        run: bash tests/run_image.sh glkvm-relay:ci
+        run: |
+          docker image inspect --format '{{.Architecture}}' glkvm-relay:ci | grep -qxF "$(basename ${{ matrix.platform }})"
+          { docker run --rm --entrypoint /usr/bin/rttys glkvm-relay:ci 2>&1 || true; } | grep -m1 -F "Go OS/Arch: ${{ matrix.platform }}"
+          bash tests/run_image.sh glkvm-relay:ci
