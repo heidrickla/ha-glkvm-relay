@@ -12,6 +12,7 @@ if len(sys.argv) != 2:
 host = sys.argv[1]
 
 ctx = ssl.create_default_context()
+ctx.minimum_version = ssl.TLSVersion.TLSv1_2
 ctx.check_hostname = False
 ctx.verify_mode = ssl.CERT_NONE
 with urllib.request.urlopen(f"https://{host}/", context=ctx, timeout=10) as r:
